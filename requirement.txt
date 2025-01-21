@@ -3,3 +3,10 @@ fastapi[standard]
 pydantic
 streamlit
 requests
+langgraph
+langgraph-sdk
+langsmith
+langchain-community
+langchain-core
+langchain-openai
+langchain-groq

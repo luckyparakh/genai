@@ -1,14 +1,14 @@
 from dotenv import load_dotenv
 from fastapi import HTTPException
 import httpx
-from model import GitLabTagResponse, UserInput,GitLabCommitsResponse,Commit
+from model import GitLabTagResponse, UserInput, GitLabCommitsResponse, Commit
 import logging
 load_dotenv()
 
 
 async def get_data(input_data: UserInput, logger: logging.Logger):
     latest_tag_details = await get_latest_tag_details(input_data, logger)
-    await get_delta_commits(input_data,latest_tag_details.commit.created_at, logger)
+    return await get_delta_commits(input_data, latest_tag_details.commit.created_at, logger)
 
 
 async def get_latest_tag_details(input: UserInput, logger: logging.Logger) -> GitLabTagResponse:
@@ -42,7 +42,7 @@ async def get_latest_tag_details(input: UserInput, logger: logging.Logger) -> Gi
             status_code=500, detail=f"Unexpected error: {str(e)}")
 
 
-async def get_delta_commits(input,last_commit_created_at, logger)->GitLabCommitsResponse:
+async def get_delta_commits(input, last_commit_created_at, logger) -> str:
     logger.info("Get Delta Commits")
     headersList = {
         "PRIVATE-TOKEN": input.access_token
@@ -52,7 +52,7 @@ async def get_delta_commits(input,last_commit_created_at, logger)->GitLabCommits
     logger.debug(f"Delta Commit URL: {commits_endpoint}")
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(commits_endpoint, headers=headersList, 
+            response = await client.get(commits_endpoint, headers=headersList,
                                         params={"ref_name": reference_branch, "since": last_commit_created_at})
             response.raise_for_status()  # Raises httpx.HTTPStatusError for non-200 status
             output = response.json()
@@ -60,10 +60,14 @@ async def get_delta_commits(input,last_commit_created_at, logger)->GitLabCommits
             if not output:
                 raise HTTPException(
                     status_code=404, detail="No commits found.")
-            # Parse the commits using Pydantic
-            commits = [ Commit(**commit) for commit in output]
-            logger.debug(f"Latest Tag JSON: {commits}")
-            return commits
+            titles = []
+            for commit in output:
+                # Parse the commits using Pydantic
+                c = Commit(**commit)
+                titles.append(c.title)
+            joinedTitles= "\n\n".join(titles)
+            logger.debug(f"Response: {joinedTitles}")
+            return joinedTitles
 
     except httpx.RequestError as e:
         raise HTTPException(status_code=500, detail=f"Request error: {e}")

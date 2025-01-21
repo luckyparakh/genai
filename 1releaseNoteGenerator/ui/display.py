@@ -51,6 +51,7 @@ if st.button("Submit"):
             response = requests.post(FASTAPI_URL, json=input_data)
             response.raise_for_status()  # Raise error for non-200 responses
             result = response.json()
-            st.success(f"Response: {result['message']}")
+            st.success(f"Response: \n {result['message']}")
+            # st.success({result['message']})
         except requests.exceptions.RequestException as e:
             st.error(f"Error: {e}")

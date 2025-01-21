@@ -1,3 +1,5 @@
 python-dotenv
 fastapi[standard]
 pydantic
+streamlit
+requests
